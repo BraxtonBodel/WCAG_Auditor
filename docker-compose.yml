@@ -1,0 +1,42 @@
+services:
+  # Base de datos con soporte para vectores
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: wcag_db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: accessibility_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Tu API de FastAPI
+  wcag_api:
+    build: .
+    container_name: wcag_api
+    # Mapeamos el directorio actual (raíz del proyecto) al directorio '/app' del contenedor
+    volumes:
+      - .:/app
+    # IMPORTANTE: Definimos que el contenedor trabaje DESDE /app
+    working_dir: /app
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/accessibility_db
+      - PYTHONPATH=/app
+    depends_on:
+      - db
+    # Comando para iniciar la API usando la ruta correcta del módulo
+    command: uvicorn accessibility_ai.app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Servicio de Ollama para los embeddings
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    ports:
+      - "11434:11434"
+
+volumes:
+  postgres_data:
