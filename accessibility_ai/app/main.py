@@ -10,11 +10,18 @@ from .utils import obtener_embedding_de_ollama
 from .scraper import extract_html_content, AccessibilityIssue
 
 
-with engine.connect() as connection:
-    connection.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-    connection.commit()
+@app.on_event("startup")
+def startup_db_client():
+    try:
+        with engine.connect() as connection:
+        connection.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+        connection.commit()
 
-models.Base.metadata.create_all(bind=engine)
+        models.Base.metadata.create_all(bind=engine)
+        print("Base de datos inicializada correctamente.")
+    
+    except Exception as e:
+        print(f"Advertencia: No se pudo conectar a la base de datos: {e}")
 
 app = FastAPI(title="WCAG Auditor Api")
 
