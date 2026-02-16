@@ -3,9 +3,11 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from . import utils
 from . import models, schemas
+from typing import List, Optional
 
 from .database import get_db, engine, Base
 from .utils import obtener_embedding_de_ollama
+from .scraper import extract_html_content, AccessibilityIssue
 
 
 with engine.connect() as connection:
@@ -88,4 +90,49 @@ async def audit_accessibility_issue(error_description: str, db: Session = Depend
         "results_found": len(matches),
         "suggested_guidelines": matches
     }
+
+@app.post("/audit/url")
+async def audit_url_accessibility(url: str, db: Session = Depends(get_db)):
+    issues = extract_html_content(url)
+
+    results_found = []
+
+    for issue in issues:
+        query_vector = await utils.obtener_embedding_de_ollama(issue.issue_description)
+
+        wcag_info = None
+        if query_vector:
+            query = text(""" 
+                SELECT success_criterion, description, level,
+                        (1 - (embedding <=> :vector)) as similarity
+                FROM wcag_guidelines
+                WHERE (1 - (embedding <=> :vector)) >= 0.70
+                ORDER BY similarity DESC
+                LIMIT 1
+            """)
+
+            match = db.execute(query, {"vector" : str(query_vector)}).fetchone()
+
+            if match:
+                wcag_info = {
+                    "criterion" : match[0],
+                    "description": match[1],
+                    "level": match[2]
+                }
         
+        results_found.append({
+            "element": issue.html_content,
+            "issue": issue.issue_description,
+            "suggestion": issue.suggested_fix,
+            "wcag_match": wcag_info
+        })
+    
+    return {
+        "url": url,
+        "total_issues": len(results_found),
+        "audit_results" : results_found
+    }
+
+@app.get("/guidelines/", response_model=List[schemas.GuidelineResponse])
+def get_guidelines(db: Session = Depends(get_db)):
+    return db.query(models.WCAGGuideline).all()

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import List, Optional
 
 class GuidelineCreate(BaseModel):
@@ -6,8 +6,8 @@ class GuidelineCreate(BaseModel):
     description: str
     level: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+        from_attributes = True,
         json_schema_extra = {
             "example": {
                 "success_criterion": "1.1.1",
@@ -15,6 +15,7 @@ class GuidelineCreate(BaseModel):
                 "level": "A"
             }
         }
+    )
 
 class GuidelineResponse(GuidelineCreate):
     id:int

@@ -4,3 +4,8 @@ sqlalchemy
 psycopg2-binary
 pgvector
 httpx
+beautifulsoup4
+requests
+pytest
+pytest-mock
+pytest-asyncio
