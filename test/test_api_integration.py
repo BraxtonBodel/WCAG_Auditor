@@ -1,5 +1,5 @@
 from fastapi.testclient import TestClient
-from accessibility_ai.app.main import app
+from accessibility_ai.app.main import app, get_db
 from unittest.mock import MagicMock
 
 client = TestClient(app)
@@ -28,7 +28,7 @@ def test_guidelines_endpoint(mocker):
 
     response = client.get("/guidelines/")
 
-    dependency_overrides = {}
+    app.dependency_overrides = {}
 
     assert response.status_code == 200
 
