@@ -14,8 +14,8 @@ from .scraper import extract_html_content, AccessibilityIssue
 def startup_db_client():
     try:
         with engine.connect() as connection:
-        connection.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-        connection.commit()
+            connection.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+            connection.commit()
 
         models.Base.metadata.create_all(bind=engine)
         print("Base de datos inicializada correctamente.")
